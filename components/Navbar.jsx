@@ -4,14 +4,17 @@ import {Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
 
 export default function Navbar() {
   return (
-    <nav className="flex items-centers justify-between border-b px-6 py-4  
-    border border-white/20 sticky top-5 z-50 
-        bg-white/8 bg-transparent
-        backdrop-blur-md
-        backdrop-saturate-150
-        shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]
-       w-full rounded-xl
-    ">
+    <nav className="
+  flex items-center justify-between
+  border border-white/20
+  px-6 py-4 
+  fixed top-0 left-0.5 mx-auto z-60
+  bg-gray-950/80
+  backdrop-blur-md
+  backdrop-saturate-150
+  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]
+  w-full rounded-xl
+">
       <Link href="/" className="text-3xl pt-2 font-extrabold font-serif text-gray-300 " >
         IndieFlix
       </Link>

@@ -110,7 +110,7 @@ export default function LocationPicker({ onLocationChange }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 ">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Select Your Location</h2>
 
@@ -125,12 +125,12 @@ export default function LocationPicker({ onLocationChange }) {
 
       {message && <p className="text-sm">{message}</p>}
 
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-lg border ">
         <MapContainer
           center={position}
           zoom={13}
           scrollWheelZoom
-          style={{ height: "350px", width: "100%" }}
+          style={{ height: "350px", width: "100%", zIndex:10 }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

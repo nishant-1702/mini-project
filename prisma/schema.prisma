@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+enum RoomStatus {
+  WAITING
+  LIVE
+  ENDED
+}
+
+enum RoomRole {
+  HOST
+  MEMBER
+}
+
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  imageUrl  String?
+  profileImageKey String?
+
+  dateOfBirth DateTime?
+
+  fullAddress String?
+  houseNumber String?
+  street      String?
+  locality    String?
+  city        String?
+  state       String?
+  country     String?
+  postalCode  String?
+
+  latitude  Float?
+  longitude Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hostedRooms   Room[]       @relation("RoomHost")
+  memberships   RoomMember[]
+  messages      Message[]
+  uploadedVideos Video[]
+}
+
+
+model Room {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String     @unique @default(cuid())
+  status      RoomStatus @default(WAITING)
+  isPrivate   Boolean    @default(true)
+  maxMembers  Int        @default(10)
+  hostId      String
+  createdAt   DateTime   @default(now())
+  videoId String?
+  video   Video? @relation(fields: [videoId], references: [id], onDelete: SetNull)
+
+  host    User         @relation("RoomHost", fields: [hostId], references: [id])
+  members RoomMember[]
+  messages Message[]
+}
+
+model RoomMember {
+  roomId   String
+  userId   String
+  role     RoomRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, userId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  roomId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+
+model Video {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  videoUrl    String
+  thumbnailUrl String?
+  storageKey  String   @unique
+  duration    Int?
+  fileSize    BigInt?
+  mimeType    String?
+  uploadedAt  DateTime @default(now())
+
+  uploaderId  String
+  uploader    User     @relation(fields: [uploaderId], references: [id])
+
+  rooms       Room[]
+}
+
+

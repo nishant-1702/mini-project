@@ -1,24 +1,27 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
+import { DropBox } from "@/components/DropBox";
+import { CreateRoom } from "@/components/CreateRoom";
 
 export default async function Dashboard() {
   await auth.protect();
 
   return (
-    <main className="h-screen bg-gray-950 px-6 py-10 text-white">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between">
+    <main className="min-h-screen  -mt-16 bg-gray-950 px-6 py-40 text-white">
+      <div className="mx-auto flex max-w-6xl items-center justify-between">
         <Link href="/" className="text-2xl font-bold text-purple-400">
           CineMeet
         </Link>
 
         <UserButton />
-      </nav>
+      </div>
 
       <section className="mx-auto mt-16 max-w-6xl">
         <h1 className="text-4xl font-bold">
           Welcome to CineMeet 🎬
         </h1>
+       <DropBox/>
 
         <p className="mt-3 text-gray-400">
           Watch movies together, even when you are apart.
@@ -34,9 +37,9 @@ export default async function Dashboard() {
               Start a watch party and invite your friends.
             </p>
 
-            <button className="mt-6 rounded-lg bg-purple-600 px-5 py-3 font-medium hover:bg-purple-500">
-              Create Room
-            </button>
+            
+              <CreateRoom/>
+            
           </div>
 
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8">

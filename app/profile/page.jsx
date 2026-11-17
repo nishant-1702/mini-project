@@ -1,11 +1,13 @@
 "use client"
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserButton } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import LocationPickerLoader from "@/components/LocationPickerLoader";
+import ProfilePhotoUpload from "@/components/profile/ProfilePhotoUpload";
+import DownloadProfile from "@/components/profile/DownloadProfile";
 
 import * as React from "react"
 import { format } from "date-fns"
@@ -36,10 +38,64 @@ export default function ProfilePage() {
 });
    const [loadingAddress, setLoadingAddress] = useState(false);
    const [addressMessage, setAddressMessage] = useState("");
+
+const [profileLoading, setProfileLoading] = useState(true);
+
+useEffect(() => {
+  if (!isLoaded || !isSignedIn) return;
+
+  async function fetchProfile() {
+    try {
+      const response = await fetch("/api/profile");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Profile fetch failed");
+      }
+
+      if (data) {
+        setAddress({
+          fullAddress: data.fullAddress || "",
+          houseNumber: data.houseNumber || "",
+          street: data.street || "",
+          locality: data.locality || "",
+          city: data.city || "",
+          state: data.state || "",
+          country: data.country || "",
+          postalCode: data.postalCode || "",
+          latitude: data.latitude ?? null,
+          longitude: data.longitude ?? null,
+        });
+
+        setDate(
+          data.dateOfBirth ? new Date(data.dateOfBirth) : undefined
+        );
+      }
+    } catch (error) {
+      console.error("Profile fetch error:", error);
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+
+  fetchProfile();
+}, [isLoaded, isSignedIn]);
+
+
+
+   
   const [date, setDate] = useState();
 
-   if(!isLoaded) return <div>Loading...</div>;
-   if(!isSignedIn) return <div>Please sign in to view your profile.</div>;
+  const [saving, setSaving] = useState(false);
+const [saveMessage, setSaveMessage] = useState("");
+
+   if (!isLoaded || profileLoading) {
+  return <div>Loading profile...</div>;
+}
+
+if (!isSignedIn) {
+  return <div>Please sign in to view your profile.</div>;
+}
 
    
 
@@ -94,6 +150,53 @@ function updateAddress(field, value) {
     [field]: value,
   }));
 }
+
+
+
+async function handleSaveProfile() {
+  setSaving(true);
+  setSaveMessage("");
+
+  try {
+    const response = await fetch("/api/users/sync", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        dateOfBirth: date ? date.toISOString() : null,
+
+        fullAddress: address.fullAddress,
+        houseNumber: address.houseNumber,
+        street: address.street,
+        locality: address.locality,
+        city: address.city,
+        state: address.state,
+        country: address.country,
+        postalCode: address.postalCode,
+
+        latitude: address.latitude,
+        longitude: address.longitude,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Profile save failed");
+    }
+
+    setSaveMessage("Profile saved successfully!");
+
+  } catch (error) {
+    console.error("Profile save error:", error);
+    setSaveMessage(error.message || "Something went wrong");
+
+  } finally {
+    setSaving(false);
+  }
+}
+
    
 
     return (
@@ -149,9 +252,8 @@ function updateAddress(field, value) {
               </div>
 
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-purple-400/30 bg-purple-500/10 text-3xl font-bold text-purple-300">
-                  U
-                </div>
+                  <ProfilePhotoUpload initialImageUrl={user?.imageUrl || ""} />
+               
 
                 <div>
                   <p className="font-medium">Your profile photo</p>
@@ -159,12 +261,7 @@ function updateAddress(field, value) {
                     JPG, PNG or WEBP. You can change it anytime.
                   </p>
 
-                  <button
-                    type="button"
-                    className="mt-4 rounded-lg border border-white/15 px-4 py-2 text-sm font-medium transition hover:bg-white/5"
-                  >
-                    Upload Photo
-                  </button>
+                 
                 </div>
               </div>
             </section>
@@ -222,8 +319,9 @@ function updateAddress(field, value) {
                 <div>
                   <Label className="text-sm mt-2 font-medium text-gray-300"> Date of Birth </Label>
                   <Popover>
-      <PopoverTrigger render={<Button variant={"outline"} data-empty={!date} className="w-[212px] justify-between text-left bg-black font-normal data-[empty=true]:text-muted-foreground">{date ? format(date, "PPP") : <span>Pick a date</span>}<ChevronDownIcon data-icon="inline-end" /></Button>} />
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverTrigger render={<Button variant={"outline"} data-empty={!date} className="w-53 mt-1.5 justify-between text-left bg-foreground text-background hover:bg-foreground hover:text-background
+       font-normal data-[empty=true]:text-muted-foreground">{date ? format(date, "PPP") : <span>Pick a date</span>}<ChevronDownIcon data-icon="inline-end" /></Button>} />
+      <PopoverContent className="w-auto ml-1 mt-1.5 bg-foreground text-background p-0" align="start">
         <Calendar
           mode="single"
           selected={date}
@@ -292,9 +390,10 @@ className="w-full rounded-md border h-11 mt-2 border-white/10 bg-[#09090b] py-2 
                   />
 
  {/* Location Picker */}
-<LocationPickerLoader
+<LocationPickerLoader className="mt-4 "
   onLocationChange={({ latitude, longitude }) =>
     fetchAddress(latitude, longitude)
+   
   }
 />
 {loadingAddress && (
@@ -318,13 +417,28 @@ className="w-full rounded-md border h-11 mt-2 border-white/10 bg-[#09090b] py-2 
                     Cancel
                   </Link>
 
-                  <button
-                    type="button"
-                    className="rounded-xl bg-purple-600 px-6 py-3 text-sm font-semibold transition hover:bg-purple-500"
-                  >
-                    Save Changes
-                  </button>
+                  
+<button
+  type="button"
+  onClick={handleSaveProfile}
+  disabled={saving}
+  className="rounded-xl bg-purple-600 px-6 py-3 text-sm font-semibold transition hover:bg-purple-500 disabled:opacity-50"
+>
+  {saving ? "Saving..." : "Save Changes"}
+</button>
+
+
+
+
                 </div>
+            <div className="mt-2 text-sm font-bold text-right ">
+              {saveMessage && (
+  <p className="text-sm text-purple-400">
+    {saveMessage}
+  </p>
+)}
+              </div>    
+                
               </form>
             </section>
 
@@ -337,12 +451,13 @@ className="w-full rounded-md border h-11 mt-2 border-white/10 bg-[#09090b] py-2 
                 </p>
               </div>
 
-              <button
-                type="button"
-                className="shrink-0 rounded-xl border border-white/15 px-5 py-3 text-sm font-medium transition hover:bg-white/5"
-              >
-                ↓ Download Profile
-              </button>
+              <DownloadProfile
+  profile={{
+    fullName: user?.fullName,
+    email: user?.primaryEmailAddress?.emailAddress,
+    address: address,
+  }}
+/>
             </section>
           </div>
         </div>
